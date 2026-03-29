@@ -1,9 +1,9 @@
- # 创建 conda 环境                                                                                                                           
-  conda create -n dino-pspnet python=3.11 -y                                                                                                  
-  conda activate dino-pspnet                                                                                                                  
+#  # 创建 conda 环境                                                                                                                           
+#   conda create -n dino-pspnet python=3.11 -y                                                                                                  
+#   conda activate dino-pspnet                                                                                                                  
                   
-  # PyTorch 2.5（支持 CUDA 12.4，向下兼容）                                                                                                   
-  pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124
+#   # PyTorch 2.5（支持 CUDA 12.4，向下兼容）                                                                                                   
+#   pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124
                                                                                                                                               
   # 其他依赖      
   pip install transformers>=4.56.0                                                                                                            
