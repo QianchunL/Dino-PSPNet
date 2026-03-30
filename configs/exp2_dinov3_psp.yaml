@@ -1,0 +1,33 @@
+# 实验二：DINOv3 ViT-S/16 + PSPNet（冻结 backbone）
+# 核心实验：验证 DINOv3 自监督特征 vs ResNet101 监督特征
+# 对比实验一（default.yaml）：唯一变量是 backbone
+# 用法：python tools/train.py --config configs/exp2_dinov3_psp.yaml
+
+experiment: "exp2_dinov3_psp"
+
+data:
+  root: "./data"
+  split_train: "trainaug"
+  crop_size: 512
+  scale_range: [0.5, 2.0]
+  num_workers: 4
+
+model:
+  backbone: "dinov3"
+  head: "psp"
+  num_classes: 21
+  frozen_backbone: true
+
+train:
+  max_iters: 30000
+  batch_size: 16
+  lr: 0.01
+  backbone_lr_mult: 0.1
+  weight_decay: 1.0e-4
+  aux_weight: 0.4                # dinov3 无 aux head，此参数自动忽略
+  ignore_index: 255
+
+output:
+  log_dir: "./runs"
+  save_dir: "./checkpoints"
+  save_every: 5

@@ -243,10 +243,42 @@ def train(args):
     print(f"\n[done] best val mIoU = {best_miou:.4f}")
 
 
+# ── YAML 配置加载 ─────────────────────────────────────────────────────────
+
+def _flatten_cfg(cfg: dict) -> dict:
+    """将嵌套 YAML 展开为 argparse 对应的平级 key。"""
+    flat = {}
+    section_map = {
+        "data":   {"root": "data_root", "split_train": "split_train",
+                   "crop_size": "crop_size", "scale_range": "scale_range",
+                   "num_workers": "num_workers"},
+        "model":  {"backbone": "backbone", "head": "head",
+                   "num_classes": "num_classes", "frozen_backbone": "frozen_backbone"},
+        "train":  {"max_iters": "max_iters", "batch_size": "batch_size",
+                   "lr": "lr", "backbone_lr_mult": "backbone_lr_mult",
+                   "weight_decay": "weight_decay", "aux_weight": "aux_weight",
+                   "ignore_index": "ignore_index"},
+        "output": {"log_dir": "log_dir", "save_dir": "save_dir", "save_every": "save_every"},
+    }
+    if "experiment" in cfg:
+        flat["experiment"] = cfg["experiment"]
+    for section, key_map in section_map.items():
+        for yaml_key, arg_key in key_map.items():
+            if yaml_key in cfg.get(section, {}):
+                flat[arg_key] = cfg[section][yaml_key]
+    return flat
+
+
 # ── 命令行参数 ────────────────────────────────────────────────────────────
 
 def parse_args():
+    # 先解析 --config，用 YAML 值作为 argparse 的 defaults（CLI 参数仍可覆盖）
+    pre = argparse.ArgumentParser(add_help=False)
+    pre.add_argument("--config", default=None)
+    pre_args, _ = pre.parse_known_args()
+
     p = argparse.ArgumentParser()
+    p.add_argument("--config",          default=None,                     help="YAML 配置文件路径，CLI 参数可覆盖其中任意值")
     # 模型
     p.add_argument("--backbone",        default="resnet101",              choices=["resnet101", "dinov3"])
     p.add_argument("--head",            default="psp",                    choices=["psp", "simple"])
@@ -271,10 +303,17 @@ def parse_args():
     p.add_argument("--aux_weight",      type=float, default=0.4,         help="auxiliary loss 权重（仅 resnet101）")
     p.add_argument("--ignore_index",    type=int,   default=255)
     # 输出
-    p.add_argument("--experiment",      default="exp1_resnet101_pspnet")
+    p.add_argument("--experiment",      default="exp1_resnet101_frozen")
     p.add_argument("--save_dir",        default="./checkpoints")
     p.add_argument("--log_dir",         default="./runs")
     p.add_argument("--save_every",      type=int,   default=5)
+
+    if pre_args.config:
+        import yaml
+        with open(pre_args.config) as f:
+            cfg = yaml.safe_load(f)
+        p.set_defaults(**_flatten_cfg(cfg))
+
     return p.parse_args()
 
 

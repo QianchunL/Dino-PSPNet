@@ -1,42 +1,30 @@
-# 训练超参数配置（实验一：ResNet101 + PSPNet，按论文设置）
+# 实验一：ResNet101 + PSPNet（冻结 backbone，linear probing）
+# 用法：python tools/train.py --config configs/default.yaml
 
-experiment: "exp1_resnet101_pspnet"
+experiment: "exp1_resnet101_frozen"
 
-# 数据
 data:
   root: "./data"
-  split_train: "trainaug"    # SBD 增强训练集（10,582 张），论文使用
-  split_val:   "val"         # 1,449 张
+  split_train: "trainaug"       # SBD 增强训练集（10,582 张）
   crop_size: 512
   scale_range: [0.5, 2.0]
   num_workers: 4
 
-# 模型
 model:
   backbone: "resnet101"
   head: "psp"
   num_classes: 21
-  pretrained: true
-  frozen_backbone: true      # 只训练分割头
+  frozen_backbone: true          # 只训练分割头
 
-# 训练（论文 SGD 设置）
 train:
-  epochs: 50
-  batch_size: 16             # 论文用 16；单卡显存不足可减半并同步减半 lr
-  optimizer: "sgd"
-  lr: 0.01                   # base lr；batch_size=8 时改为 0.005（线性缩放）
-  momentum: 0.9
+  max_iters: 30000               # epochs 由 train.py 自动推算
+  batch_size: 16
+  lr: 0.01                       # head lr；batch 翻倍时同步翻倍
+  backbone_lr_mult: 0.1          # 全量微调时生效，frozen 时忽略
   weight_decay: 1.0e-4
-  lr_schedule: "poly"        # lr = base_lr * (1 - iter/max_iter)^0.9，按 iteration 更新
-  aux_weight: 0.4            # auxiliary loss 权重（仅 resnet101）
+  aux_weight: 0.4                # auxiliary loss 权重（仅 resnet101）
   ignore_index: 255
 
-# 评估（多尺度，论文设置）
-eval:
-  scales: [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]
-  flip: true
-
-# 输出
 output:
   log_dir: "./runs"
   save_dir: "./checkpoints"

@@ -1,0 +1,32 @@
+# 实验一变体：ResNet101 + PSPNet（全量微调，对标论文 82.6%）
+# backbone lr = lr × backbone_lr_mult = 0.01 × 0.1 = 0.001
+# 用法：python tools/train.py --config configs/exp1_finetune.yaml
+
+experiment: "exp1_resnet101_finetune"
+
+data:
+  root: "./data"
+  split_train: "trainaug"
+  crop_size: 512
+  scale_range: [0.5, 2.0]
+  num_workers: 4
+
+model:
+  backbone: "resnet101"
+  head: "psp"
+  num_classes: 21
+  frozen_backbone: false         # 全量微调
+
+train:
+  max_iters: 30000
+  batch_size: 16
+  lr: 0.01                       # head lr
+  backbone_lr_mult: 0.1          # backbone lr = 0.01 × 0.1 = 0.001（论文设置）
+  weight_decay: 1.0e-4
+  aux_weight: 0.4
+  ignore_index: 255
+
+output:
+  log_dir: "./runs"
+  save_dir: "./checkpoints"
+  save_every: 5

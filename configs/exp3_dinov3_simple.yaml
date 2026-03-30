@@ -1,0 +1,33 @@
+# 实验三：DINOv3 ViT-S/16 + 简单 1×1 卷积头（消融实验）
+# 消融目的：对比实验二，唯一变量是有无金字塔池化
+# 回答"ViT 时代金字塔池化是否还有附加价值"
+# 用法：python tools/train.py --config configs/exp3_dinov3_simple.yaml
+
+experiment: "exp3_dinov3_simple"
+
+data:
+  root: "./data"
+  split_train: "trainaug"
+  crop_size: 512
+  scale_range: [0.5, 2.0]
+  num_workers: 4
+
+model:
+  backbone: "dinov3"
+  head: "simple"                 # 仅 1×1 卷积，无金字塔池化
+  num_classes: 21
+  frozen_backbone: true
+
+train:
+  max_iters: 30000
+  batch_size: 16
+  lr: 0.01
+  backbone_lr_mult: 0.1
+  weight_decay: 1.0e-4
+  aux_weight: 0.4
+  ignore_index: 255
+
+output:
+  log_dir: "./runs"
+  save_dir: "./checkpoints"
+  save_every: 5
