@@ -26,6 +26,8 @@ import sys
 import time
 from pathlib import Path
 
+from tqdm import tqdm
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import numpy as np
@@ -166,7 +168,9 @@ def train(args):
         num_classes = args.num_classes
         conf = np.zeros((num_classes, num_classes), dtype=np.int64)
 
-        for images, masks in train_loader:
+        pbar = tqdm(train_loader, desc=f"Epoch {epoch:03d}/{epochs}", leave=False,
+                    dynamic_ncols=True)
+        for images, masks in pbar:
             # Poly LR：按 iteration 更新
             lr = poly_lr(args.lr, cur_iter, max_iters)
             set_lr(optimizer, lr)
@@ -189,6 +193,7 @@ def train(args):
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
+            pbar.set_postfix(loss=f"{loss.item():.4f}", lr=f"{lr:.2e}")
 
             # 训练集 mIoU 估算（每 batch 累积混淆矩阵）
             preds = main_logits.detach().argmax(dim=1).cpu().numpy()
