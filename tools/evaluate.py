@@ -110,21 +110,28 @@ def predict_multiscale(
 # ── 混淆矩阵工具 ──────────────────────────────────────────────────────────
 
 def update_confusion(conf: np.ndarray, pred: np.ndarray, gt: np.ndarray, ignore_index: int = 255):
-    mask  = gt != ignore_index
-    pred  = pred[mask]
-    gt    = gt[mask]
-    n     = conf.shape[0]
-    np.add.at(conf, (gt, pred), 1)
+    mask = gt != ignore_index
+    np.add.at(conf, (gt[mask], pred[mask]), 1)
 
 
 def compute_miou(conf: np.ndarray):
-    iou_list = []
+    """返回 (iou_per_class, mean_iou)。
+    iou_per_class[c] = float IoU，或 None（该类在 GT 和预测中均不出现）。
+    mean_iou 只对有效类取均值（与论文评估协议一致）。
+    """
+    iou_per_class = []
+    valid = []
     for c in range(conf.shape[0]):
         tp    = conf[c, c]
         denom = conf[c, :].sum() + conf[:, c].sum() - tp
         if denom > 0:
-            iou_list.append(tp / denom)
-    return iou_list, float(np.mean(iou_list)) if iou_list else 0.0
+            iou = float(tp / denom)
+            iou_per_class.append(iou)
+            valid.append(iou)
+        else:
+            iou_per_class.append(None)
+    mean_iou = float(np.mean(valid)) if valid else 0.0
+    return iou_per_class, mean_iou
 
 
 # ── 主评估函数 ────────────────────────────────────────────────────────────
@@ -167,7 +174,8 @@ def evaluate(args):
     print(f"\n{'Class':<16} {'IoU':>8}")
     print("-" * 26)
     for c, iou in enumerate(iou_list):
-        print(f"{VOC_CLASSES[c]:<16} {iou:.4f}")
+        iou_str = f"{iou:.4f}" if iou is not None else "   N/A"
+        print(f"{VOC_CLASSES[c]:<16} {iou_str:>8}")
     print("-" * 26)
     print(f"{'mIoU':<16} {miou:.4f}")
 

@@ -177,25 +177,29 @@ def train(args):
         # ── 验证（resnet101 切 eval 模式，关闭 aux） ──
         model.eval()
         val_conf = np.zeros((num_classes, num_classes), dtype=np.int64)
+        val_loss_total = 0.0
         with torch.no_grad():
             for images, masks in val_loader:
-                images = images.to(device)
+                images, masks = images.to(device), masks.to(device)
                 logits = model(images)  # eval 模式只返回 main_logits
+                val_loss_total += criterion(logits, masks).item()
                 preds  = logits.argmax(dim=1).cpu().numpy()
-                val_conf += batch_confusion(preds, masks.numpy(), num_classes, args.ignore_index)
+                val_conf += batch_confusion(preds, masks.cpu().numpy(), num_classes, args.ignore_index)
         val_miou = miou_from_confusion(val_conf)
+        val_loss_avg = val_loss_total / len(val_loader)
 
         # ── 日志 ──
         writer.add_scalar("train/loss",    total_loss / n, epoch)
         writer.add_scalar("train/mIoU",    train_miou,     epoch)
         writer.add_scalar("train/lr",      lr,             epoch)
+        writer.add_scalar("val/loss",      val_loss_avg,   epoch)
         writer.add_scalar("val/mIoU",      val_miou,       epoch)
         if use_aux:
             writer.add_scalar("train/loss_main", total_main / n, epoch)
             writer.add_scalar("train/loss_aux",  total_aux  / n, epoch)
 
         log = (f"[{epoch:03d}/{args.epochs}] "
-               f"loss={total_loss/n:.4f}  "
+               f"loss={total_loss/n:.4f}  val_loss={val_loss_avg:.4f}  "
                f"train_mIoU={train_miou:.4f}  val_mIoU={val_miou:.4f}  "
                f"lr={lr:.2e}  {elapsed:.0f}s")
         if use_aux:
@@ -226,7 +230,8 @@ def parse_args():
     p.add_argument("--backbone",        default="resnet101",              choices=["resnet101", "dinov3"])
     p.add_argument("--head",            default="psp",                    choices=["psp", "simple"])
     p.add_argument("--num_classes",     type=int,   default=21)
-    p.add_argument("--frozen_backbone", action="store_true",              default=True)
+    p.add_argument("--frozen_backbone", action=argparse.BooleanOptionalAction, default=True,
+                   help="冻结 backbone（默认）；--no_frozen_backbone 解冻微调")
     # 数据
     p.add_argument("--data_root",       default="./data")
     p.add_argument("--split_train",     default="trainaug",               help="train | trainaug")
