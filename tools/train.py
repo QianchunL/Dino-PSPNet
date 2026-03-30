@@ -43,9 +43,10 @@ def poly_lr(base_lr: float, cur_iter: int, max_iter: int, power: float = 0.9) ->
     return base_lr * (1.0 - cur_iter / max_iter) ** power
 
 
-def set_lr(optimizer, lr: float) -> None:
+def set_lr(optimizer, base_lr: float) -> None:
+    """按 poly 衰减更新 lr；各组保持初始时设定的 lr_mult 比例。"""
     for pg in optimizer.param_groups:
-        pg["lr"] = lr
+        pg["lr"] = base_lr * pg.get("lr_mult", 1.0)
 
 
 # ── mIoU（训练时快速估算，用混淆矩阵） ───────────────────────────────────
@@ -117,9 +118,22 @@ def train(args):
     print(f"[model] trainable={trainable:,} / total={total:,} params")
 
     # ── 优化器：SGD + momentum，论文设置 ──
+    # 全量微调时 backbone 用 lr×backbone_lr_mult（论文 0.1），head 用 lr×1.0
+    if not args.frozen_backbone and hasattr(model, "backbone"):
+        backbone_ids = {id(p) for p in model.backbone.parameters()}
+        param_groups = [
+            {"params": [p for p in model.parameters() if id(p) not in backbone_ids],
+             "lr": args.lr, "lr_mult": 1.0},
+            {"params": list(model.backbone.parameters()),
+             "lr": args.lr * args.backbone_lr_mult, "lr_mult": args.backbone_lr_mult},
+        ]
+    else:
+        param_groups = [
+            {"params": list(filter(lambda p: p.requires_grad, model.parameters())),
+             "lr": args.lr, "lr_mult": 1.0},
+        ]
     optimizer = torch.optim.SGD(
-        filter(lambda p: p.requires_grad, model.parameters()),
-        lr=args.lr,
+        param_groups,
         momentum=0.9,
         weight_decay=args.weight_decay,
     )
@@ -250,7 +264,9 @@ def parse_args():
                    help="总迭代数（论文 VOC=30K）；epochs 由 max_iters / iters_per_epoch 自动推算")
     p.add_argument("--batch_size",      type=int,   default=16)
     p.add_argument("--lr",              type=float, default=0.01,
-                   help="base lr（batch_size=16 基准）；其他 batch_size 建议按线性缩放")
+                   help="head base lr（batch_size=16 基准）；其他 batch_size 建议按线性缩放")
+    p.add_argument("--backbone_lr_mult", type=float, default=0.1,
+                   help="全量微调时 backbone lr = lr × backbone_lr_mult（论文设置 0.1）")
     p.add_argument("--weight_decay",    type=float, default=1e-4)
     p.add_argument("--aux_weight",      type=float, default=0.4,         help="auxiliary loss 权重（仅 resnet101）")
     p.add_argument("--ignore_index",    type=int,   default=255)
