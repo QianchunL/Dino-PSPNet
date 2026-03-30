@@ -141,6 +141,9 @@ def train(args):
     # ── 训练循环 ──
     for epoch in range(1, epochs + 1):
         model.train()
+        # 冻结 backbone 时保持其 BN 在 eval 模式，防止 running stats 被 VOC 数据污染
+        if args.frozen_backbone and hasattr(model, "backbone"):
+            model.backbone.eval()
         total_loss = total_main = total_aux = 0.0
         t0 = time.time()
         num_classes = args.num_classes
