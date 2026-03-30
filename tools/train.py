@@ -21,6 +21,7 @@
 """
 
 import argparse
+import math
 import time
 from pathlib import Path
 
@@ -130,12 +131,15 @@ def train(args):
     writer = SummaryWriter(log_dir=str(Path(args.log_dir) / args.experiment))
 
     use_aux   = isinstance(model, ResNet101PSPNet)
-    max_iters = args.epochs * len(train_loader)
+    iters_per_epoch = len(train_loader)
+    max_iters = args.max_iters
+    epochs    = math.ceil(max_iters / iters_per_epoch)
     cur_iter  = 0
     best_miou = 0.0
+    print(f"[train] max_iters={max_iters}  iters/epoch={iters_per_epoch}  => epochs={epochs}")
 
     # ── 训练循环 ──
-    for epoch in range(1, args.epochs + 1):
+    for epoch in range(1, epochs + 1):
         model.train()
         total_loss = total_main = total_aux = 0.0
         t0 = time.time()
@@ -198,7 +202,7 @@ def train(args):
             writer.add_scalar("train/loss_main", total_main / n, epoch)
             writer.add_scalar("train/loss_aux",  total_aux  / n, epoch)
 
-        log = (f"[{epoch:03d}/{args.epochs}] "
+        log = (f"[{epoch:03d}/{epochs}] "
                f"loss={total_loss/n:.4f}  val_loss={val_loss_avg:.4f}  "
                f"train_mIoU={train_miou:.4f}  val_mIoU={val_miou:.4f}  "
                f"lr={lr:.2e}  {elapsed:.0f}s")
@@ -239,9 +243,11 @@ def parse_args():
     p.add_argument("--scale_range",     type=float, nargs=2,              default=[0.5, 2.0])
     p.add_argument("--num_workers",     type=int,   default=4)
     # 训练（论文默认值）
-    p.add_argument("--epochs",          type=int,   default=50)
+    p.add_argument("--max_iters",       type=int,   default=30000,
+                   help="总迭代数（论文 VOC=30K）；epochs 由 max_iters / iters_per_epoch 自动推算")
     p.add_argument("--batch_size",      type=int,   default=16)
-    p.add_argument("--lr",              type=float, default=0.01,         help="batch_size 减半时同步减半")
+    p.add_argument("--lr",              type=float, default=0.01,
+                   help="base lr（batch_size=16 基准）；其他 batch_size 建议按线性缩放")
     p.add_argument("--weight_decay",    type=float, default=1e-4)
     p.add_argument("--aux_weight",      type=float, default=0.4,         help="auxiliary loss 权重（仅 resnet101）")
     p.add_argument("--ignore_index",    type=int,   default=255)
