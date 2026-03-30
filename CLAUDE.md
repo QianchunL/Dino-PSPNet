@@ -167,6 +167,35 @@ mean = (0.485, 0.456, 0.406)
 std = (0.229, 0.224, 0.225)
 ```
 
+## 实验结果
+
+### 实验一：ResNet101 + PSPNet（冻结 backbone，linear probing）
+
+**配置**：`configs/default.yaml`，max_iters=30000，batch_size=16，lr=0.01
+
+**评估**：多尺度（0.5–1.75）+ 水平翻转，VOC 2012 val set
+
+| Class         |   IoU  | Class        |   IoU  |
+|---------------|--------|--------------|--------|
+| background    | 0.9187 | cow          | 0.7994 |
+| aeroplane     | 0.7962 | diningtable  | 0.5016 |
+| bicycle       | 0.3576 | dog          | 0.8267 |
+| bird          | 0.8015 | horse        | 0.7471 |
+| boat          | 0.6170 | motorbike    | 0.7346 |
+| bottle        | 0.7202 | person       | 0.7871 |
+| bus           | 0.8935 | pottedplant  | 0.5015 |
+| car           | 0.8080 | sheep        | 0.8198 |
+| cat           | 0.8770 | sofa         | 0.3888 |
+| chair         | 0.3226 | train        | 0.8223 |
+|               |        | tvmonitor    | 0.7032 |
+
+**mIoU = 0.7021**
+
+> 低 IoU 类别集中在小物体/形状细长类（bicycle 0.36、chair 0.32、sofa 0.39），
+> 符合冻结 backbone 对细粒度结构特征捕捉不足的预期。
+
+---
+
 ## 加分项
 
 ### 可视化
