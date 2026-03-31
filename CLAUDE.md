@@ -178,7 +178,7 @@ std = (0.229, 0.224, 0.225)
 | 实验一（冻结） | ResNet101 | linear probing | 0.7021 |
 | 实验一（微调） | ResNet101 | full fine-tuning | **0.7873** |
 | 实验二 | DINOv3 ViT-S/16 | linear probing | **0.8239** |
-| 实验三 | DINOv3 ViT-S/16 | linear probing（无PPM） | - |
+| 实验三 | DINOv3 ViT-S/16 | linear probing（无PPM） | 0.8127 |
 | 论文 PSPNet | ResNet101 | full fine-tuning | 0.826（test set） |
 
 ---
@@ -257,6 +257,43 @@ std = (0.229, 0.224, 0.225)
 > **核心结论**：DINOv3 冻结特征（只训练 PSP head）超过 ResNet101 全量微调，
 > 证明自监督预训练特征质量显著优于 ImageNet 监督特征。
 > bicycle/chair 仍是弱项，说明这两类是数据和结构层面的难点，与 backbone 无关。
+
+---
+
+### 实验三：DINOv3 ViT-S/16 + 简单 1×1 卷积头（消融）
+
+**配置**：`configs/exp3_dinov3_simple.yaml`，max_iters=30000，batch_size=16，lr=0.01
+
+| Class         | IoU    | Class        | IoU    |
+|---------------|--------|--------------|--------|
+| background    | 0.9522 | cow          | 0.9066 |
+| aeroplane     | 0.8911 | diningtable  | 0.6365 |
+| bicycle       | 0.4341 | dog          | 0.9139 |
+| bird          | 0.8846 | horse        | 0.8841 |
+| boat          | 0.7672 | motorbike    | 0.8895 |
+| bottle        | 0.8402 | person       | 0.8997 |
+| bus           | 0.9323 | pottedplant  | 0.7098 |
+| car           | 0.9052 | sheep        | 0.8888 |
+| cat           | 0.9371 | sofa         | 0.6432 |
+| chair         | 0.5043 | train        | 0.9157 |
+|               |        | tvmonitor    | 0.7301 |
+
+**mIoU = 0.8127**（vs 实验二 PSP head −1.12 pts）
+
+> PPM 带来 +1.12 pts 的提升，边际价值有限但非零。
+> ViT 全局自注意力已覆盖大部分多尺度上下文，PPM 的附加作用大幅缩小。
+> 即使只用 1×1 卷积，DINOv3（0.8127）仍超过 ResNet101 全量微调（0.7873）。
+
+---
+
+### 跨实验分析
+
+| 对比 | 差值 | 结论 |
+|------|------|------|
+| 实验一冻结 → 实验二 | +12.2 pts | DINOv3 自监督特征远优于 ResNet101 监督特征 |
+| 实验一微调 → 实验二 | +3.7 pts | DINOv3 冻结特征超过 ResNet101 全量微调 |
+| 实验三 → 实验二 | +1.1 pts | PPM 在 ViT 时代仍有效，但边际价值大幅降低 |
+| 实验三 → 实验一微调 | +2.5 pts | 仅 1×1 卷积的 DINOv3 仍优于全量微调的 ResNet101 |
 
 ---
 
