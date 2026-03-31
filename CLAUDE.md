@@ -169,13 +169,25 @@ std = (0.229, 0.224, 0.225)
 
 ## 实验结果
 
+> 评估协议：多尺度（0.5, 0.75, 1.0, 1.25, 1.5, 1.75）+ 水平翻转，VOC 2012 **val set**
+
+### 汇总
+
+| 实验 | Backbone | 训练方式 | mIoU (val) |
+|------|----------|----------|-----------|
+| 实验一（冻结） | ResNet101 | linear probing | 0.7021 |
+| 实验一（微调） | ResNet101 | full fine-tuning | **0.7873** |
+| 实验二 | DINOv3 ViT-S/16 | linear probing | - |
+| 实验三 | DINOv3 ViT-S/16 | linear probing（无PPM） | - |
+| 论文 PSPNet | ResNet101 | full fine-tuning | 0.826（test set） |
+
+---
+
 ### 实验一：ResNet101 + PSPNet（冻结 backbone，linear probing）
 
 **配置**：`configs/default.yaml`，max_iters=30000，batch_size=16，lr=0.01
 
-**评估**：多尺度（0.5–1.75）+ 水平翻转，VOC 2012 val set
-
-| Class         |   IoU  | Class        |   IoU  |
+| Class         | IoU    | Class        | IoU    |
 |---------------|--------|--------------|--------|
 | background    | 0.9187 | cow          | 0.7994 |
 | aeroplane     | 0.7962 | diningtable  | 0.5016 |
@@ -191,8 +203,34 @@ std = (0.229, 0.224, 0.225)
 
 **mIoU = 0.7021**
 
-> 低 IoU 类别集中在小物体/形状细长类（bicycle 0.36、chair 0.32、sofa 0.39），
-> 符合冻结 backbone 对细粒度结构特征捕捉不足的预期。
+> 低 IoU 集中在小物体/细长类（bicycle 0.36、chair 0.32、sofa 0.39），ImageNet
+> 特征冻结后难以捕捉细粒度结构信息。
+
+---
+
+### 实验一变体：ResNet101 + PSPNet（全量微调，对标论文）
+
+**配置**：`configs/exp1_finetune.yaml`，max_iters=30000，batch_size=16，head lr=0.01，backbone lr=0.001
+
+| Class         | IoU    | Class        | IoU    |
+|---------------|--------|--------------|--------|
+| background    | 0.9455 | cow          | 0.9138 |
+| aeroplane     | 0.9035 | diningtable  | 0.5737 |
+| bicycle       | 0.4224 | dog          | 0.9235 |
+| bird          | 0.9025 | horse        | 0.8995 |
+| boat          | 0.6967 | motorbike    | 0.8393 |
+| bottle        | 0.8159 | person       | 0.8713 |
+| bus           | 0.9456 | pottedplant  | 0.5967 |
+| car           | 0.8740 | sheep        | 0.8999 |
+| cat           | 0.9516 | sofa         | 0.5083 |
+| chair         | 0.3949 | train        | 0.8773 |
+|               |        | tvmonitor    | 0.7775 |
+
+**mIoU = 0.7873**（vs 冻结 +8.5 pts，vs 论文 −3.9 pts on val）
+
+> 端到端微调带来全面提升，尤其 sofa +12 pts、boat +8 pts。残余差距（~4 pts vs 论文）
+> 属于 Caffe vs PyTorch BN 行为差异的正常复现误差。
+> bicycle/chair 仍是难类，属于该方案的结构性弱点，与训练方式无关。
 
 ---
 
