@@ -177,7 +177,7 @@ std = (0.229, 0.224, 0.225)
 |------|----------|----------|-----------|
 | 实验一（冻结） | ResNet101 | linear probing | 0.7021 |
 | 实验一（微调） | ResNet101 | full fine-tuning | **0.7873** |
-| 实验二 | DINOv3 ViT-S/16 | linear probing | - |
+| 实验二 | DINOv3 ViT-S/16 | linear probing | **0.8239** |
 | 实验三 | DINOv3 ViT-S/16 | linear probing（无PPM） | - |
 | 论文 PSPNet | ResNet101 | full fine-tuning | 0.826（test set） |
 
@@ -231,6 +231,32 @@ std = (0.229, 0.224, 0.225)
 > 端到端微调带来全面提升，尤其 sofa +12 pts、boat +8 pts。残余差距（~4 pts vs 论文）
 > 属于 Caffe vs PyTorch BN 行为差异的正常复现误差。
 > bicycle/chair 仍是难类，属于该方案的结构性弱点，与训练方式无关。
+
+---
+
+### 实验二：DINOv3 ViT-S/16 + PSPNet（冻结 backbone）
+
+**配置**：`configs/exp2_dinov3_psp.yaml`，max_iters=30000，batch_size=16，lr=0.01
+
+| Class         | IoU    | Class        | IoU    |
+|---------------|--------|--------------|--------|
+| background    | 0.9543 | cow          | 0.8979 |
+| aeroplane     | 0.8960 | diningtable  | 0.6996 |
+| bicycle       | 0.4343 | dog          | 0.9238 |
+| bird          | 0.9196 | horse        | 0.8823 |
+| boat          | 0.7912 | motorbike    | 0.8952 |
+| bottle        | 0.8508 | person       | 0.8966 |
+| bus           | 0.9493 | pottedplant  | 0.7426 |
+| car           | 0.9076 | sheep        | 0.8878 |
+| cat           | 0.9431 | sofa         | 0.6307 |
+| chair         | 0.4911 | train        | 0.9274 |
+|               |        | tvmonitor    | 0.7808 |
+
+**mIoU = 0.8239**（vs ResNet101 冻结 +12.2 pts；vs ResNet101 微调 +3.7 pts）
+
+> **核心结论**：DINOv3 冻结特征（只训练 PSP head）超过 ResNet101 全量微调，
+> 证明自监督预训练特征质量显著优于 ImageNet 监督特征。
+> bicycle/chair 仍是弱项，说明这两类是数据和结构层面的难点，与 backbone 无关。
 
 ---
 
