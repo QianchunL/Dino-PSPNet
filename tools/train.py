@@ -45,7 +45,8 @@ from models.segmentor import (
 # ── Poly LR（按 iteration） ───────────────────────────────────────────────
 
 def poly_lr(base_lr: float, cur_iter: int, max_iter: int, power: float = 0.9) -> float:
-    return base_lr * (1.0 - cur_iter / max_iter) ** power
+    factor = max(0.0, 1.0 - cur_iter / max_iter)
+    return base_lr * factor ** power
 
 
 def set_lr(optimizer, base_lr: float) -> None:
