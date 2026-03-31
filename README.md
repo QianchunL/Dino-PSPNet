@@ -6,11 +6,11 @@
 
 ## 实验设计
 
-### 实验逻辑链
+### 实验逻辑
 
 ```
-实验一 vs 实验二 → DINOv3 自监督特征 vs ResNet101 监督特征，谁更适合分割？
-实验二 vs 实验三 → 金字塔池化对 ViT 特征是否还有附加价值？
+实验一 vs 实验二 → DINOv3 自监督特征 vs ResNet101 监督特征
+实验二 vs 实验三 → 金字塔池化对 ViT 特征价值
 ```
 
 | 实验 | Backbone | 分割头 | 训练方式 | 目的 |
@@ -42,7 +42,7 @@
 |------|------|------|
 | 实验一冻结 → 实验二 | +12.2 pts | DINOv3 自监督特征远优于 ResNet101 监督特征 |
 | 实验一微调 → 实验二 | +3.7 pts | DINOv3 冻结特征超过 ResNet101 全量微调 |
-| 实验三 → 实验二 | +1.1 pts | PPM 在 ViT 时代仍有效，但边际价值大幅降低 |
+| 实验三 → 实验二 | +1.1 pts | PPM 仍有效，但边际价值大幅降低 |
 | 实验三 → 实验一微调 | +2.5 pts | 仅 1×1 卷积的 DINOv3 仍优于全量微调的 ResNet101 |
 
 ### 逐类别结果
@@ -123,7 +123,7 @@
 
 ## 模型结构
 
-### 实验一：ResNet101 + PSPNet（含空洞卷积 + deep supervision）
+### 实验一：ResNet101 + PSPNet
 
 ```
 输入图像           [B, 3, 512, 512]
@@ -189,7 +189,7 @@ data/VOCdevkit/VOC2012/
     ImageSets/Segmentation/{train,val,trainval}.txt
 ```
 
-### SBD 增强训练集（论文使用，10,582 张）
+### SBD 增强训练集（10,582 张）
 
 下载 `SegmentationClassAug/` 和 `trainaug.txt`，放到：
 ```
@@ -207,7 +207,7 @@ VOCdevkit/VOC2012/ImageSets/Segmentation/trainaug.txt
 # 实验一：ResNet101 + PSPNet（冻结 backbone）
 python tools/train.py --config configs/default.yaml
 
-# 实验一变体：全量微调（对标论文）
+# 实验一变体：全量微调
 python tools/train.py --config configs/exp1_finetune.yaml
 
 # 实验二：DINOv3 + PSPNet
@@ -228,7 +228,7 @@ python tools/train.py --config configs/exp3_dinov3_simple.yaml
 ### 评估
 
 ```bash
-# 多尺度 + 翻转（论文协议）
+# 多尺度 + 翻转
 python tools/evaluate.py \
   --checkpoint checkpoints/exp2_dinov3_psp/best.pth \
   --backbone dinov3 --head psp
